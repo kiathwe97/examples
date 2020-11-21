@@ -11,11 +11,11 @@ import data
 import model
 
 parser = argparse.ArgumentParser(description='PyTorch Wikitext-2 RNN/LSTM/GRU/Transformer Language Model')
-parser.add_argument('--data', type=str, default='./data/wikitext-2',
+parser.add_argument('--data', type=str, default='examples/word_language_model/data/wikitext-2',
                     help='location of the data corpus')
 parser.add_argument('--model', type=str, default='LSTM',
                     help='type of recurrent net (RNN_TANH, RNN_RELU, LSTM, GRU, Transformer)')
-parser.add_argument('--emsize', type=int, default=200,
+parser.add_argument('--emsize', type=int, default=20,
                     help='size of word embeddings')
 parser.add_argument('--nhid', type=int, default=200,
                     help='number of hidden units per layer')
@@ -50,6 +50,8 @@ parser.add_argument('--nhead', type=int, default=2,
                     help='the number of heads in the encoder/decoder of the transformer model')
 parser.add_argument('--dry-run', action='store_true',
                     help='verify the code and the model')
+parser.add_argument('--n', type=int, default = 8,
+                    help='n in n-gram')
 
 args = parser.parse_args()
 
@@ -100,6 +102,8 @@ test_data = batchify(corpus.test, eval_batch_size)
 ntokens = len(corpus.dictionary)
 if args.model == 'Transformer':
     model = model.TransformerModel(ntokens, args.emsize, args.nhead, args.nhid, args.nlayers, args.dropout).to(device)
+elif args.model == "FNN":
+    model = model.FNNModel(ntokens, args.emsize, args.nhid, args.nlayers, ntokens, args.dropout)
 else:
     model = model.RNNModel(args.model, ntokens, args.emsize, args.nhid, args.nlayers, args.dropout, args.tied).to(device)
 
@@ -148,6 +152,8 @@ def evaluate(data_source):
             if args.model == 'Transformer':
                 output = model(data)
                 output = output.view(-1, ntokens)
+            elif args.model == "FNN":
+                output = model(data)
             else:
                 output, hidden = model(data, hidden)
                 hidden = repackage_hidden(hidden)
@@ -171,6 +177,8 @@ def train():
         if args.model == 'Transformer':
             output = model(data)
             output = output.view(-1, ntokens)
+        elif args.model == "FNN":
+            output = model(data)
         else:
             hidden = repackage_hidden(hidden)
             output, hidden = model(data, hidden)

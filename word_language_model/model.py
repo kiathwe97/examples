@@ -3,6 +3,42 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class FNNModel(nn.Module):
+    #hidden layer size is hidden_dim, output dimensions should be |V|
+    def __init__(self, n, embedding_dim, hidden_dim, hidden_layers, output_dim, dropout):
+        super(FNNModel, self).__init__()
+        self.n = n
+        self.embedding_dim = embedding_dim
+        self.hidden_dim = hidden_dim
+        self.hidden_layers = hidden_layers
+        self.output_dim = output_dim
+        self.drop = nn.Dropout(dropout)
+        self.encoder = nn.Embedding(output_dim, n)
+        # Linear function
+        self.fc1 = nn.Linear(n*embedding_dim, hidden_dim)
+        # Non-linearity
+        self.sigmoid = nn.Sigmoid()
+        # Linear function (readout)
+        self.decoder = nn.Linear(hidden_dim, output_dim)
+        self.embeddings = nn.Embedding(output_dim, embedding_dim)
+    #inputs will be a list of index
+    #the input will be: input = torch.LongTensor([[1,2,4,5],[4,3,2,9]])
+    def forward(self, inputs):
+        # unsure if embeds work like this or not
+        embeds = self.embeddings(inputs)
+        input_to_nn = torch.flatter(embeds)
+        out = self.fc1(input_to_nn)
+
+        # Non-linearity  # NON-LINEAR
+        out = self.sigmoid(out) #will need to change this to tanh
+
+        # Dropout
+        self.drop(out)
+
+        # Linear function (readout)  # LINEAR
+        decoded = self.decoder(out)
+        return F.log_softmax(decoded)
+
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
 
