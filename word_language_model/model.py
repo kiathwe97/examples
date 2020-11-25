@@ -12,12 +12,15 @@ class MLPTanH(nn.Module):
         linear = nn.Linear(input_dim, hidden_dim)
         self.layers.add_module("fc_0", linear)
         self.layers.add_module("Tanh_0",  nn.Tanh())
+        # This is the final layer
         self.layers.add_module("fc_1", nn.Linear(hidden_dim, vocab_size))
     def forward(self,x):
         return self.layers(x.view(x.size(0), -1))
+    def set_decoder_weights(self, embedding_weights):
+        self.layers.fc_1.weight = embedding_weights 
 class FNNModel(nn.Module):
     #hidden layer size is hidden_dim, output dimensions should be |V|
-    def __init__(self, embedding_dim, vocab_size, hidden_dimensions=(100,), dropout=0.5, ngram=1):
+    def __init__(self, embedding_dim, vocab_size, hidden_dimensions=(100,), dropout=0.5, ngram=1, tie_weights=False):
         super(FNNModel, self).__init__()
         self.hidden_dimensions = hidden_dimensions
         self.embedding_dim = embedding_dim
@@ -26,8 +29,12 @@ class FNNModel(nn.Module):
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.init_weights()
         self.mlp = MLPTanH(input_dim=(ngram-1)*embedding_dim,hidden_dim=hidden_dimensions[0], vocab_size=vocab_size)
+        if tie_weights:
+          self.mlp.set_decoder_weights(embedding_weights = self.embedding.weight)
+        print("configuration : Embedding:{} Vocab:{} Hidden Dim:{} n-gram size:{} parameters: {}".format(embedding_dim, vocab_size, hidden_dimensions, ngram, self.get_parameters_count()))
+    def get_parameters_count(self):
+      return sum([p.numel() for p in self.parameters() if p.requires_grad])
 
-        print("configuration : Embedding:{} Vocab:{} Hidden Dim:{} n-gram size:{}".format(embedding_dim, vocab_size, hidden_dimensions, ngram))
     #inputs will be a list of index
     #the input will be: input = torch.LongTensor([[1,2,4,5],[4,3,2,9]])
     def forward(self, inputs):
@@ -36,21 +43,6 @@ class FNNModel(nn.Module):
         hidden = self.mlp(x)
         softmax = F.log_softmax(hidden, dim=1)
         return softmax
-        '''
-        embeds = self.encoder(inputs)
-        input_to_nn = torch.flatter(embeds)
-        out = self.fc1(input_to_nn)
-
-        # Non-linearity  # NON-LINEAR
-        out = self.sigmoid(out) #will need to change this to tanh
-
-        # Dropout
-        self.drop(out)
-
-        # Linear function (readout)  # LINEAR
-        decoded = self.decoder(out)
-        return F.log_softmax(decoded)
-        '''
     def init_weights(self):
         for param in self.parameters():
             if len(param.shape) >= 2 and param.requires_grad:
