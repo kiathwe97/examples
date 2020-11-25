@@ -2,30 +2,46 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+class MLPTanH(nn.Module):
+    def __init__(self, input_dim, hidden_dim, vocab_size):
+        super(MLPTanH, self).__init__()
 
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.layers = nn.Sequential()
+        print(hidden_dim)
+        linear = nn.Linear(input_dim, hidden_dim)
+        self.layers.add_module("fc_0", linear)
+        self.layers.add_module("Tanh_0",  nn.Tanh())
+        self.layers.add_module("fc_1", nn.Linear(hidden_dim, vocab_size))
+    def forward(self,x):
+        return self.layers(x.view(x.size(0), -1))
 class FNNModel(nn.Module):
     #hidden layer size is hidden_dim, output dimensions should be |V|
-    def __init__(self, n, embedding_dim, hidden_dim, hidden_layers, output_dim, dropout):
+    def __init__(self, embedding_dim, vocab_size, hidden_dimensions=(100,), dropout=0.5, ngram=1):
         super(FNNModel, self).__init__()
-        self.n = n
+        self.hidden_dimensions = hidden_dimensions
         self.embedding_dim = embedding_dim
-        self.hidden_dim = hidden_dim
-        self.hidden_layers = hidden_layers
-        self.output_dim = output_dim
-        self.drop = nn.Dropout(dropout)
-        self.encoder = nn.Embedding(output_dim, n)
-        # Linear function
-        self.fc1 = nn.Linear(n*embedding_dim, hidden_dim)
-        # Non-linearity
-        self.sigmoid = nn.Sigmoid()
-        # Linear function (readout)
-        self.decoder = nn.Linear(hidden_dim, output_dim)
-        self.embeddings = nn.Embedding(output_dim, embedding_dim)
+        self.vocab_size = vocab_size
+        self.dropout = dropout
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.init_weights()
+        self.mlp = MLPTanH(input_dim=(ngram-1)*embedding_dim,hidden_dim=hidden_dimensions[0], vocab_size=vocab_size)
+
+        print("configuration : Embedding:{} Vocab:{} Hidden Dim:{} n-gram size:{}".format(embedding_dim, vocab_size, hidden_dimensions, ngram))
     #inputs will be a list of index
     #the input will be: input = torch.LongTensor([[1,2,4,5],[4,3,2,9]])
     def forward(self, inputs):
-        # unsure if embeds work like this or not
-        embeds = self.embeddings(inputs)
+        x = self.embedding(inputs)
+        x = x.view(inputs.size(0), -1)
+        print(x.shape)
+        hidden = self.mlp(x)
+        print(hidden.shape)
+        softmax = F.log_softmax(hidden, dim=1)
+        print(softmax.shape)
+        return softmax
+        '''
+        embeds = self.encoder(inputs)
         input_to_nn = torch.flatter(embeds)
         out = self.fc1(input_to_nn)
 
@@ -38,7 +54,13 @@ class FNNModel(nn.Module):
         # Linear function (readout)  # LINEAR
         decoded = self.decoder(out)
         return F.log_softmax(decoded)
-
+        '''
+    def init_weights(self):
+        for param in self.parameters():
+            if len(param.shape) >= 2 and param.requires_grad:
+                nn.init.uniform_(param)
+            
+    
 class RNNModel(nn.Module):
     """Container module with an encoder, a recurrent module, and a decoder."""
 
