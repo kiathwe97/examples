@@ -9,7 +9,6 @@ class MLPTanH(nn.Module):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.layers = nn.Sequential()
-        print(hidden_dim)
         linear = nn.Linear(input_dim, hidden_dim)
         self.layers.add_module("fc_0", linear)
         self.layers.add_module("Tanh_0",  nn.Tanh())
@@ -34,11 +33,8 @@ class FNNModel(nn.Module):
     def forward(self, inputs):
         x = self.embedding(inputs)
         x = x.view(inputs.size(0), -1)
-        print(x.shape)
         hidden = self.mlp(x)
-        print(hidden.shape)
         softmax = F.log_softmax(hidden, dim=1)
-        print(softmax.shape)
         return softmax
         '''
         embeds = self.encoder(inputs)

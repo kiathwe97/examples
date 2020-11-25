@@ -133,7 +133,7 @@ def repackage_hidden(h):
 
 def get_batch(source, i, ngram):
     print(source.shape, "get batch")
-    return torch.narrow(source, 1, i, ngram-1), torch.narrow(source, 1, i+ngram-1, 1)
+    return torch.narrow(source, 1, i, ngram-1), torch.narrow(source, 1, i+ngram-1, 1).view(-1)
     #return torch.autograd.Variable(source[i:i+ngram]), torch.autograd.Variable(source[i+ngram].view(-1))
 
 
@@ -164,19 +164,16 @@ def train(optimizer):
 
     # Turn on training mode which enables dropout.
     model.train()
-    print("Train")
-
+    print("Train", len(range(1, train_data.size(0) - args.n -1)))
+    print(train_data.size())
+    print("num of steps: ", train_data.size(1) - args.n -1)
     # Training for ngram case is lesser by :n(size of n-gram) - 1 for whole corpus because n-gram is only valid when predicting for (size-n)th word
-    for step_num in range(1, train_data.size(0) - args.n):
+    for step_num in range(1, train_data.size(1) - args.n -1):
         data, target = get_batch(train_data, step_num, args.n)
         data = data.to(device)
         target = target.to(device)
-        print(data.cpu().numpy())
-        print(data.shape, "Shape here")
 
         predicted_logits = model(data)
-        print(predicted_logits.shape, "predicted")
-        print(target.shape)
         loss = criterion(predicted_logits, target)
 
         # reset optimizer state, start loss and move optimizer
@@ -185,7 +182,8 @@ def train(optimizer):
         optimizer.step()
 
         total_loss += loss.item()
-
+        print(loss.item())
+        print("step : ", step_num)
         if step_num % args.log_interval == 0 and step_num > 0:
             cur_loss = total_loss / args.log_interval
             elapsed = time.time() - start_time
