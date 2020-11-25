@@ -152,7 +152,6 @@ def train(optimizer):
     total_steps = train_data.size(1) - args.n -1
     for step_num in range(1, total_steps):
         data, target = get_batch(train_data, step_num, args.n)
-        print(data.numpy())
         data = data.to(device)
         target = target.to(device)
 
