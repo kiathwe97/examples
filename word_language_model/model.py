@@ -28,7 +28,7 @@ class FNNModel(nn.Module):
         self.dropout = dropout
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.init_weights()
-        self.mlp = MLPTanH(input_dim=(ngram-1)*embedding_dim,hidden_dim=hidden_dimensions[0], vocab_size=vocab_size)
+        self.mlp = MLPTanH(input_dim=(ngram)*embedding_dim,hidden_dim=hidden_dimensions[0], vocab_size=vocab_size)
         if tie_weights:
           self.mlp.set_decoder_weights(embedding_weights = self.embedding.weight)
         print("configuration : Embedding:{} Vocab:{} Hidden Dim:{} n-gram size:{} parameters: {}".format(embedding_dim, vocab_size, hidden_dimensions, ngram, self.get_parameters_count()))

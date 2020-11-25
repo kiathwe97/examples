@@ -48,7 +48,7 @@ args = parser.parse_args()
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter(comment=args.comment)
+writer = SummaryWriter(comment=args.name)
 
 # Set the random seed manually for reproducibility.
 torch.manual_seed(args.seed)
@@ -123,7 +123,7 @@ def repackage_hidden(h):
 # to the seq_len dimension in the LSTM.
 
 def get_batch(source, i, ngram):
-    return torch.narrow(source, 1, i, ngram-1), torch.narrow(source, 1, i+ngram-1, 1).view(-1)
+    return torch.narrow(source, 1, i, ngram), torch.narrow(source, 1, i+ngram, 1).view(-1)
 
 def evaluate(data_source):
     # Turn on evaluation mode which disables dropout.
