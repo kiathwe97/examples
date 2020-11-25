@@ -43,7 +43,7 @@ parser.add_argument('--dry-run', action='store_true',
                     help='verify the code and the model')
 parser.add_argument('--n', type=int, default = 8,
                     help='n in n-gram')
-
+parser.add_argument("--optimizer", type=str, default="sgd", choices=["sgd", "adam", "rmsprops"], help=" Optimizer to use for learning, one of : sgd, adam or rmsprops")
 args = parser.parse_args()
 
 import torch
@@ -152,6 +152,7 @@ def train(optimizer):
     total_steps = train_data.size(1) - args.n -1
     for step_num in range(1, total_steps):
         data, target = get_batch(train_data, step_num, args.n)
+        print(data.numpy())
         data = data.to(device)
         target = target.to(device)
 
@@ -190,7 +191,14 @@ best_val_loss = None
 # At any point you can hit Ctrl + C to break out of training early.
 try:
     parameters = [param for param in model.parameters() if param.requires_grad]
-    optimizer = torch.optim.SGD(parameters, lr=args.lr)
+    optimizer = ""
+    if args.optimizer is "sgd":
+      optimizer = torch.optim.SGD(parameters, lr=args.lr)
+    elif args.optimizer is "rmsprops":
+      optimizer = torch.optim.RMSprop(parameters, lr=args.lr)
+    else:
+      optimizer = torch.optim.Adam(parameters, lr=args.lr)
+      
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
         train_loss = train(optimizer)
