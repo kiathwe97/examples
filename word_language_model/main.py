@@ -132,7 +132,6 @@ def repackage_hidden(h):
 # to the seq_len dimension in the LSTM.
 
 def get_batch(source, i, ngram):
-    print(source.shape, "get batch")
     return torch.narrow(source, 1, i, ngram-1), torch.narrow(source, 1, i+ngram-1, 1).view(-1)
     #return torch.autograd.Variable(source[i:i+ngram]), torch.autograd.Variable(source[i+ngram].view(-1))
 
@@ -143,17 +142,14 @@ def evaluate(data_source):
     total_loss = 0.
     ntokens = len(corpus.dictionary)
     with torch.no_grad():
-        for i in range(0, data_source.size(0) - 1, args.bptt):
-            data, targets = get_batch(data_source, i)
-            if args.model == 'Transformer':
-                output = model(data)
-                output = output.view(-1, ntokens)
-            elif args.model == "FNN":
-                output = model(data)
-            else:
-                output, hidden = model(data, hidden)
-                hidden = repackage_hidden(hidden)
-            total_loss += len(data) * criterion(output, targets).item()
+      print(data_source.shape)
+      for step_num in range(1, data_source.size(1) - args.n -1):
+          data, targets = get_batch(test_data, step_num, args.n)
+          data = data.to(device)
+          targets = targets.to(device)
+          output = model(data)
+          total_loss += len(data) * criterion(output, targets).item()
+    print(total_loss/ (len(data_source) - 1))
     return total_loss / (len(data_source) - 1)
 
 
@@ -164,9 +160,6 @@ def train(optimizer):
 
     # Turn on training mode which enables dropout.
     model.train()
-    print("Train", len(range(1, train_data.size(0) - args.n -1)))
-    print(train_data.size())
-    print("num of steps: ", train_data.size(1) - args.n -1)
     # Training for ngram case is lesser by :n(size of n-gram) - 1 for whole corpus because n-gram is only valid when predicting for (size-n)th word
     for step_num in range(1, train_data.size(1) - args.n -1):
         data, target = get_batch(train_data, step_num, args.n)
@@ -182,15 +175,19 @@ def train(optimizer):
         optimizer.step()
 
         total_loss += loss.item()
-        print(loss.item())
-        print("step : ", step_num)
         if step_num % args.log_interval == 0 and step_num > 0:
             cur_loss = total_loss / args.log_interval
             elapsed = time.time() - start_time
+            ppl = 0
+            try:
+              ppl = torch.exp(cur_loss)
+            except OverflowError:
+              print("using overflowed replacement instead")
+              ppl = float('inf')
             print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | '
                   'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, step_num, len(train_data) // args.bptt, lr,
-                              elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
+                              elapsed * 1000 / args.log_interval, cur_loss, ppl))
             total_loss = 0
             start_time = time.time()
         if args.dry_run:
@@ -258,10 +255,17 @@ try:
         epoch_start_time = time.time()
         train(optimizer)
         val_loss = evaluate(val_data)
+        ppl = 0
+        try:
+          ppl = math.exp(val_loss)
+        except OverflowError:
+          print("using overflowed replacement instead")
+          ppl = float('inf')
+        print('=' * 89)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
                 'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
-                                           val_loss, math.exp(val_loss)))
+                                           val_loss, ppl))
         print('-' * 89)
         # Save the model if the validation loss is the best we've seen so far.
         if not best_val_loss or val_loss < best_val_loss:
@@ -286,9 +290,15 @@ with open(args.save, 'rb') as f:
 
 # Run on test data.
 test_loss = evaluate(test_data)
+ppl = 0
+try:
+  ppl = math.exp(test_loss)
+except OverflowError:
+  print("using overflowed replacement instead")
+  ppl = float('inf')
 print('=' * 89)
 print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
-    test_loss, math.exp(test_loss)))
+    test_loss, ppl))
 print('=' * 89)
 
 if len(args.onnx_export) > 0:
