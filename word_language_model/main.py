@@ -28,7 +28,8 @@ parser.add_argument('--epochs', type=int, default=200,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=20, metavar='N',
                     help='batch size')
-
+parser.add_argument('--dropout', type=float, default=0.0, metavar='N',
+                    help='Dropout rate')
 parser.add_argument('--tied', action='store_true',
                     help='tie the word embedding and softmax weights')
 parser.add_argument('--seed', type=int, default=1111,
@@ -95,7 +96,7 @@ print(train_data)
 
 ntokens = len(corpus.dictionary)
 if args.model == "FNN":
-    model = model.FNNModel(args.emsize, ntokens, (args.nhid,), ngram=args.n).to(device)
+    model = model.FNNModel(args.emsize, ntokens, (args.nhid,), ngram=args.n, dropout=args.dropout).to(device)
 
 criterion = nn.NLLLoss()
 

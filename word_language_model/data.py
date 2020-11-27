@@ -31,7 +31,7 @@ class Corpus(object):
         # Add words to the dictionary
         with open(path, 'r', encoding="utf8") as f:
             for line in f:
-                words = line.split() + ['<eos>']
+                words = ['<sos>'] + line.split() + ['<eos>']
                 for word in words:
                     self.dictionary.add_word(word)
 
@@ -39,7 +39,7 @@ class Corpus(object):
         with open(path, 'r', encoding="utf8") as f:
             idss = []
             for line in f:
-                words = line.split() + ['<eos>']
+                words = ['<sos>'] + line.split() + ['<eos>']
                 ids = []
                 for word in words:
                     ids.append(self.dictionary.word2idx[word])

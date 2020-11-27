@@ -20,12 +20,13 @@ class MLPTanH(nn.Module):
         self.layers.fc_1.weight = embedding_weights 
 class FNNModel(nn.Module):
     #hidden layer size is hidden_dim, output dimensions should be |V|
-    def __init__(self, embedding_dim, vocab_size, hidden_dimensions=(100,), dropout=0.5, ngram=1, tie_weights=False):
+    def __init__(self, embedding_dim, vocab_size, hidden_dimensions=(100,), dropout=0.0, ngram=1, tie_weights=False):
         super(FNNModel, self).__init__()
         self.hidden_dimensions = hidden_dimensions
         self.embedding_dim = embedding_dim
         self.vocab_size = vocab_size
         self.dropout = dropout
+        self.dropout_layer = nn.Dropout(p=dropout)
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.init_weights()
         self.mlp = MLPTanH(input_dim=(ngram)*embedding_dim,hidden_dim=hidden_dimensions[0], vocab_size=vocab_size)
@@ -40,6 +41,8 @@ class FNNModel(nn.Module):
     def forward(self, inputs):
         x = self.embedding(inputs)
         x = x.view(inputs.size(0), -1)
+        if self.dropout != 0.0:
+            x = self.dropout_layer(x)
         hidden = self.mlp(x)
         softmax = F.log_softmax(hidden, dim=1)
         return softmax
