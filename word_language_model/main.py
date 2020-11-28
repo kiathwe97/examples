@@ -96,7 +96,7 @@ print(train_data)
 
 ntokens = len(corpus.dictionary)
 if args.model == "FNN":
-    model = model.FNNModel(args.emsize, ntokens, (args.nhid,), ngram=args.n, dropout=args.dropout).to(device)
+    model = model.FNNModel(args.emsize, ntokens, (args.nhid,), ngram=args.n, dropout=args.dropout, tie_weights=args.tied).to(device)
 
 criterion = nn.NLLLoss()
 
