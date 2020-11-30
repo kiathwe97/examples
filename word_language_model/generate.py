@@ -53,11 +53,15 @@ order = 8
     
 corpus = data.Corpus(args.data)
 ntokens = len(corpus.dictionary)
-start_n = []
-
-start_n = ['<sos>'] * order
-
-input_ids = [corpus.dictionary.word2idx[word] if word in corpus.dictionary.word2idx else corpus.dictionary.word2idx['<unk>'] for word in start_n]
+input_ids = []
+if args.randomstart:
+  randomint = torch.randint(0, corpus.test.size(0), (1,))
+  randomint = randomint.numpy()[0]
+  entries = torch.narrow(corpus.test, 0, 0, order)
+  input_ids = entries
+else: 
+  start_n = ['<sos>'] * order
+  input_ids = [corpus.dictionary.word2idx[word] if word in corpus.dictionary.word2idx else corpus.dictionary.word2idx['<unk>'] for word in start_n]
 input = torch.LongTensor(input_ids).unsqueeze(0).to(device)
 with open(args.outf, 'w') as outf:
     with torch.no_grad():  # no tracking history
