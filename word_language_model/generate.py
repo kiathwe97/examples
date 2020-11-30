@@ -24,6 +24,7 @@ parser.add_argument('--words', type=int, default='1000',
                     help='number of words to generate')
 parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
+                    
 parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
 parser.add_argument('--temperature', type=float, default=1.0,
@@ -57,7 +58,7 @@ input_ids = []
 if args.randomstart:
   randomint = torch.randint(0, corpus.test.size(0), (1,))
   randomint = randomint.numpy()[0]
-  entries = torch.narrow(corpus.test, 0, 0, order)
+  entries = torch.narrow(corpus.test, 0, randomint, order)
   input_ids = entries
 else: 
   start_n = ['<sos>'] * order
