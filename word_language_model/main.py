@@ -124,7 +124,8 @@ def repackage_hidden(h):
 # to the seq_len dimension in the LSTM.
 
 def get_batch(source, i, ngram):
-    return torch.narrow(source, 1, i, ngram), torch.narrow(source, 1, i+ngram, 1).view(-1)
+    #print("from {} to {}, matches {}".format(i-1, i-1+ngram, i+ngram))
+    return torch.narrow(source, 1, i-1, ngram), torch.narrow(source, 1, i+ngram, 1).view(-1)
 
 def evaluate(data_source):
     # Turn on evaluation mode which disables dropout.
