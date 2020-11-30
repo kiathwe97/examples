@@ -24,7 +24,8 @@ parser.add_argument('--words', type=int, default='1000',
                     help='number of words to generate')
 parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
-                    
+parser.add_argument('--n', type=int, default='8',
+                    help='n-gram size')                
 parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
 parser.add_argument('--temperature', type=float, default=1.0,
@@ -33,6 +34,7 @@ parser.add_argument('--log-interval', type=int, default=100,
                     help='reporting interval')
 parser.add_argument('--randomstart', action='store_true',
                     help='Indicate if sentence generation is performed on existing corpus')
+
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.
